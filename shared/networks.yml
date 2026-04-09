@@ -8,3 +8,10 @@ networks:
     name: ${COMPOSE_PROJECT_NAME:-docker-services}_socket_proxy
     driver: bridge
     internal: true
+  ipv6_proxy:
+    name: ${COMPOSE_PROJECT_NAME:-docker-services}_ipv6_proxy
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd00:dead:beef:ff00::/64
