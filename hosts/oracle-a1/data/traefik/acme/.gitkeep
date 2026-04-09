@@ -1,2 +1,0 @@
-# ACME certificate storage — must be readable/writable by Traefik (uid 0)
-# Created automatically by Traefik, do not edit manually.
