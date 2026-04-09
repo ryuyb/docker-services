@@ -1,7 +1,7 @@
 # https://doc.traefik.io/traefik/
 services:
   traefik:
-    image: traefik:3.3
+    image: traefik:3.6
     container_name: traefik
     restart: unless-stopped
     security_opt:
@@ -47,10 +47,12 @@ services:
       # ── File provider (dynamic config) ─────────────────────────
       - --providers.file.directory=/rules
       - --providers.file.watch=true
-      # ── TLS ────────────────────────────────────────────────────
+      # ── TLS (wildcard cert) ───────────────────────────────────
       - --entrypoints.websecure.http.tls=true
       - --entrypoints.websecure.http.tls.options=tls-opts@file
       - --entrypoints.websecure.http.tls.certresolver=dns-cloudflare
+      - --entrypoints.websecure.http.tls.domains[0].main=${DOMAINNAME_1}
+      - --entrypoints.websecure.http.tls.domains[0].sans=*.${DOMAINNAME_1}
       # ── ACME (Let's Encrypt via Cloudflare DNS) ────────────────
       # Staging server for testing:
       # - --certificatesResolvers.dns-cloudflare.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory
