@@ -1,0 +1,43 @@
+# https://github.com/calciumion/new-api
+services:
+  new-api-init-db:
+    image: postgres:17
+    container_name: new-api-init-db
+    restart: "no"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgresql -U $$POSTGRES_USER -d postgres
+      -tc \"SELECT 1 FROM pg_database WHERE datname='${NEW_API_DB:-new-api}'\"
+      | grep -q 1
+      || PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgresql -U $$POSTGRES_USER -d postgres
+      -c 'CREATE DATABASE \"${NEW_API_DB:-new-api}\";'"
+
+  new-api:
+    image: calciumion/new-api:latest
+    container_name: new-api
+    restart: unless-stopped
+    networks:
+      - default
+      - t3_proxy
+    volumes:
+      - ${DATA_DIR:-./data}/new-api:/data
+    environment:
+      SQL_DSN: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresql:5432/${NEW_API_DB:-new-api}
+      REDIS_CONN_STRING: ${NEW_API_REDIS:-}
+      TZ: ${TZ:-Asia/Shanghai}
+      ERROR_LOG_ENABLED: ${NEW_API_ERROR_LOG:-true}
+      BATCH_UPDATE_ENABLED: ${NEW_API_BATCH_UPDATE:-true}
+    depends_on:
+      new-api-init-db:
+        condition: service_completed_successfully
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.new-api-rtr.entrypoints=websecure"
+      - "traefik.http.routers.new-api-rtr.rule=Host(`new-api.${DOMAINNAME_1}`)"
+      - "traefik.http.routers.new-api-rtr.service=new-api-svc"
+      - "traefik.http.services.new-api-svc.loadbalancer.server.port=3000"

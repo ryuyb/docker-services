@@ -1,0 +1,10 @@
+networks:
+  default:
+    name: ${COMPOSE_PROJECT_NAME:-docker-services}_default
+  t3_proxy:
+    name: ${COMPOSE_PROJECT_NAME:-docker-services}_t3_proxy
+    driver: bridge
+  socket_proxy:
+    name: ${COMPOSE_PROJECT_NAME:-docker-services}_socket_proxy
+    driver: bridge
+    internal: true

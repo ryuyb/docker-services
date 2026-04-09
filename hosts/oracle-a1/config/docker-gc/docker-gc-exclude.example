@@ -1,0 +1,5 @@
+# Images and containers listed here will not be removed by docker-gc
+# One entry per line
+# Example:
+# myapp:latest
+# myapp

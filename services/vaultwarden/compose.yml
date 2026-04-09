@@ -1,0 +1,53 @@
+# https://github.com/dani-garcia/vaultwarden
+services:
+  vaultwarden-init-db:
+    image: postgres:17
+    container_name: vaultwarden-init-db
+    restart: "no"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgresql -U $$POSTGRES_USER -d postgres
+      -tc \"SELECT 1 FROM pg_database WHERE datname='${VAULTWARDEN_DB:-vaultwarden}'\"
+      | grep -q 1
+      || PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgresql -U $$POSTGRES_USER -d postgres
+      -c 'CREATE DATABASE \"${VAULTWARDEN_DB:-vaultwarden}\";'"
+
+  vaultwarden:
+    image: vaultwarden/server:latest
+    container_name: vaultwarden
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      - default
+      - t3_proxy
+    environment:
+      TZ: ${TZ:-Asia/Shanghai}
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgresql:5432/${VAULTWARDEN_DB:-vaultwarden}
+      # ── Vaultwarden Features ──────────────────────────────
+      SENDS_ALLOWED: "${VAULTWARDEN_SENDS:-true}"
+      SIGNUPS_ALLOWED: "${VAULTWARDEN_SIGNUPS:-false}"
+      INVITATIONS_ALLOWED: "${VAULTWARDEN_INVITATIONS:-true}"
+      EMERGENCY_ACCESS_ALLOWED: "${VAULTWARDEN_EMERGENCY_ACCESS:-true}"
+      PUSH_ENABLED: "${VAULTWARDEN_PUSH:-true}"
+      # Push notification credentials from https://bitwarden.com/host/
+      # IMPORTANT: Must select US region, EU keys don't work with push.bitwarden.com
+      # Push only works with official Bitwarden mobile apps (App Store/Google Play), not F-Droid
+      PUSH_INSTALLATION_ID: "${VAULTWARDEN_PUSH_INSTALLATION_ID}"
+      PUSH_INSTALLATION_KEY: "${VAULTWARDEN_PUSH_INSTALLATION_KEY}"
+    depends_on:
+      vaultwarden-init-db:
+        condition: service_completed_successfully
+    volumes:
+      - ${DATA_DIR:-./data}/vaultwarden:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.vaultwarden-rtr.entrypoints=websecure"
+      - "traefik.http.routers.vaultwarden-rtr.rule=Host(`vault.${DOMAINNAME_1}`)"
+      - "traefik.http.routers.vaultwarden-rtr.service=vaultwarden-svc"
+      - "traefik.http.services.vaultwarden-svc.loadbalancer.server.port=80"

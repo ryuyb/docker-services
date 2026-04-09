@@ -1,0 +1,41 @@
+# ── CLIProxyAPI ──
+# Docs:    https://github.com/router-for-me/CLIProxyAPI
+# Example: https://github.com/router-for-me/CLIProxyAPI/blob/main/config.example.yaml
+
+host: ""
+port: 8317
+
+api-keys: []
+
+debug: false
+
+# TLS
+tls:
+  enable: false
+  cert: ""
+  key: ""
+
+# Management API
+remote-management:
+  allow-remote: false
+  secret-key: ""
+  disable-control-panel: false
+
+# Auth directory
+auth-dir: "~/.cli-proxy-api"
+
+# Logging
+logging-to-file: false
+logs-max-total-size-mb: 0
+
+# Retry
+request-retry: 3
+max-retry-credentials: 0
+max-retry-interval: 30
+
+# Routing
+routing:
+  strategy: "round-robin"
+
+# Proxy (optional)
+# proxy-url: "socks5://user:pass@host:port"

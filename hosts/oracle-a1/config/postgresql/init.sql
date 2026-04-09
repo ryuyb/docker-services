@@ -1,0 +1,2 @@
+-- Auto-create databases for services
+-- Only runs on first initialization (empty data directory)

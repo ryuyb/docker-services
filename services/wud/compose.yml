@@ -1,0 +1,22 @@
+# https://github.com/fmartinou/whats-up-docker
+services:
+  wud:
+    image: fmartinou/whats-up-docker
+    container_name: wud
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    networks:
+      - socket_proxy
+      - t3_proxy
+    environment:
+      WUD_WATCHER_LOCAL_CRON: "0 1 * * *"
+      WUD_WATCHER_LOCAL_WATCHALL: "true"
+      DOCKER_HOST: tcp://socket-proxy:2375
+      TZ: ${TZ:-Asia/Shanghai}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wud-rtr.entrypoints=websecure"
+      - "traefik.http.routers.wud-rtr.rule=Host(`wud.${DOMAINNAME_1}`)"
+      - "traefik.http.routers.wud-rtr.service=wud-svc"
+      - "traefik.http.services.wud-svc.loadbalancer.server.port=3000"

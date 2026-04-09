@@ -1,0 +1,19 @@
+# https://github.com/eceasy/cli-proxy-api
+services:
+  cli-proxy-api:
+    image: eceasy/cli-proxy-api:latest
+    container_name: cli-proxy-api
+    restart: unless-stopped
+    networks:
+      - t3_proxy
+    volumes:
+      - ${CONFIG_DIR:-./config}/cli-proxy-api/config.yaml:/CLIProxyAPI/config.yaml
+      - ${DATA_DIR:-./data}/cli-proxy-api/auths:/root/.cli-proxy-api
+    environment:
+      DEPLOY: docker
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.cpa-rtr.entrypoints=websecure"
+      - "traefik.http.routers.cpa-rtr.rule=Host(`cpa.${DOMAINNAME_1}`)"
+      - "traefik.http.routers.cpa-rtr.service=cpa-svc"
+      - "traefik.http.services.cpa-svc.loadbalancer.server.port=8317"

@@ -1,0 +1,9 @@
+include:
+  - ../../shared/networks.yml
+  - ../../services/socket-proxy/compose.yml
+  - ../../services/traefik/compose.yml
+  - ../../services/docker-gc/compose.yml
+  - ../../services/postgresql/compose.yml
+  - ../../services/cli-proxy-api/compose.yml
+  - ../../services/new-api/compose.yml
+  - ../../services/wud/compose.yml
