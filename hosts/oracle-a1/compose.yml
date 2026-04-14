@@ -1,5 +1,21 @@
+networks:
+  default:
+    driver: bridge
+  t3_proxy:
+    name: t3_proxy
+    driver: bridge
+  socket_proxy:
+    name: socket_proxy
+    driver: bridge
+  ipv6_proxy:
+    name: ipv6_proxy
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd00:dead:beef:ff00::/64
+
 include:
-  - ../../shared/networks.yml
   - ../../services/socket-proxy/compose.yml
   - ../../services/traefik/compose.yml
   - ../../services/docker-gc/compose.yml
