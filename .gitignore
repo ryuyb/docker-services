@@ -12,8 +12,8 @@ Thumbs.db
 *.env
 *.env.local
 !.env.example
-secrets/
-!secrets/*.example
+**/secrets/*
+!**/secrets/*.example
 
 # Traefik
 **/data/traefik/acme/acme.json
