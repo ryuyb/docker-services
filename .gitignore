@@ -18,3 +18,4 @@ secrets/
 # Traefik
 **/data/traefik/acme/acme.json
 **/data/traefik/logs/
+.alma-snapshots

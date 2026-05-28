@@ -23,4 +23,6 @@ include:
   - ../../services/cli-proxy-api/compose.yml
   - ../../services/new-api/compose.yml
   - ../../services/vaultwarden/compose.yml
+  - ../../services/sub2api/compose.yml
+  - ../../services/redis/compose.yml
   - ../../services/wud/compose.yml

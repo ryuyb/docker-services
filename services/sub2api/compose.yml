@@ -1,0 +1,97 @@
+services:
+  # ──────────────────────────────────────────────
+  # Sub2API - init database
+  # ──────────────────────────────────────────────
+  sub2api-init-db:
+    image: postgres:17-alpine
+    container_name: sub2api-init-db
+    restart: "no"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    depends_on:
+      postgresql:
+        condition: service_healthy
+    entrypoint: >
+      sh -c "PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgresql -U $$POSTGRES_USER -d postgres
+      -tc \"SELECT 1 FROM pg_database WHERE datname='sub2api'\"
+      | grep -q 1
+      || PGPASSWORD=$$POSTGRES_PASSWORD psql -h postgresql -U $$POSTGRES_USER -d postgres
+      -c 'CREATE DATABASE \"sub2api\";'"
+
+  # ──────────────────────────────────────────────
+  # Sub2API application
+  # ──────────────────────────────────────────────
+  sub2api:
+    image: weishaw/sub2api:latest
+    container_name: sub2api
+    restart: unless-stopped
+    depends_on:
+      sub2api-init-db:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+    environment:
+      - AUTO_SETUP=true
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - SERVER_MODE=release
+      - RUN_MODE=${SUB2API_RUN_MODE:-standard}
+
+      # PostgreSQL (shared service)
+      - DATABASE_HOST=postgresql
+      - DATABASE_PORT=5432
+      - DATABASE_USER=${POSTGRES_USER:-postgres}
+      - DATABASE_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      - DATABASE_DBNAME=sub2api
+      - DATABASE_SSLMODE=disable
+
+      # Redis (shared service)
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${SUB2API_REDIS_PASSWORD:-}
+      - REDIS_DB=${SUB2API_REDIS_DB:-0}
+
+      # Admin
+      - ADMIN_EMAIL=${SUB2API_ADMIN_EMAIL:-admin@sub2api.local}
+      - ADMIN_PASSWORD=${SUB2API_ADMIN_PASSWORD:-}
+
+      # JWT
+      - JWT_SECRET=${SUB2API_JWT_SECRET:-}
+      - JWT_EXPIRE_HOUR=${SUB2API_JWT_EXPIRE_HOUR:-24}
+
+      # TOTP
+      - TOTP_ENCRYPTION_KEY=${SUB2API_TOTP_ENCRYPTION_KEY:-}
+
+      # Timezone
+      - TZ=${TZ:-Asia/Shanghai}
+
+      # Security
+      - SECURITY_URL_ALLOWLIST_ENABLED=${SUB2API_SECURITY_URL_ALLOWLIST_ENABLED:-false}
+      - SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP=${SUB2API_SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP:-false}
+      - SECURITY_URL_ALLOWLIST_ALLOW_PRIVATE_HOSTS=${SUB2API_SECURITY_URL_ALLOWLIST_ALLOW_PRIVATE_HOSTS:-true}
+      - SECURITY_URL_ALLOWLIST_UPSTREAM_HOSTS=${SUB2API_SECURITY_URL_ALLOWLIST_UPSTREAM_HOSTS:-}
+
+      # Update proxy
+      - UPDATE_PROXY_URL=${SUB2API_UPDATE_PROXY_URL:-}
+
+      # Image stream & concurrency
+      - GATEWAY_IMAGE_STREAM_DATA_INTERVAL_TIMEOUT=${SUB2API_GATEWAY_IMAGE_STREAM_DATA_INTERVAL_TIMEOUT:-900}
+      - GATEWAY_IMAGE_STREAM_KEEPALIVE_INTERVAL=${SUB2API_GATEWAY_IMAGE_STREAM_KEEPALIVE_INTERVAL:-10}
+      - GATEWAY_IMAGE_CONCURRENCY_ENABLED=${SUB2API_GATEWAY_IMAGE_CONCURRENCY_ENABLED:-false}
+      - GATEWAY_IMAGE_CONCURRENCY_MAX_CONCURRENT_REQUESTS=${SUB2API_GATEWAY_IMAGE_CONCURRENCY_MAX_CONCURRENT_REQUESTS:-0}
+      - GATEWAY_IMAGE_CONCURRENCY_OVERFLOW_MODE=${SUB2API_GATEWAY_IMAGE_CONCURRENCY_OVERFLOW_MODE:-reject}
+      - GATEWAY_IMAGE_CONCURRENCY_WAIT_TIMEOUT_SECONDS=${SUB2API_GATEWAY_IMAGE_CONCURRENCY_WAIT_TIMEOUT_SECONDS:-30}
+      - GATEWAY_IMAGE_CONCURRENCY_MAX_WAITING_REQUESTS=${SUB2API_GATEWAY_IMAGE_CONCURRENCY_MAX_WAITING_REQUESTS:-100}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-T", "5", "-O", "/dev/null", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.sub2api-rtr.entrypoints=websecure"
+      - "traefik.http.routers.sub2api-rtr.rule=Host(`sub2api.${DOMAINNAME_1}`)"
+      - "traefik.http.routers.sub2api-rtr.service=sub2api-svc"
+      - "traefik.http.services.sub2api-svc.loadbalancer.server.port=8080"
