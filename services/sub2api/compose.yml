@@ -26,6 +26,8 @@ services:
     image: weishaw/sub2api:latest
     container_name: sub2api
     restart: unless-stopped
+    networks:
+      - t3_proxy
     depends_on:
       sub2api-init-db:
         condition: service_completed_successfully
